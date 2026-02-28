@@ -42,7 +42,7 @@ logger = get_logger("app")
 
 from pathlib import Path
 
-_FAVICON = Path(__file__).parent / "assets" / "favicon.svg"
+_FAVICON = Path(__file__).parent / "assets" / "favicon.png"
 
 st.set_page_config(
     page_title=APP_TITLE,
