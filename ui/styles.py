@@ -26,9 +26,9 @@ def get_custom_css() -> str:
         backdrop-filter: blur(10px);
     }
 
-    /* Full-width layout – top padding accounts for Streamlit's fixed header */
+    /* Full-width layout – no top padding, header starts at edge */
     .block-container {
-        padding: 3.5rem 1.5rem 1rem 1.5rem !important;
+        padding: 0 1.5rem 1rem 1.5rem !important;
         max-width: 100% !important;
     }
 

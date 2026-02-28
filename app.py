@@ -27,6 +27,7 @@ from config.settings import (
 )
 from models.events import EventStore, NewsEvent
 from processing.deduplicator import deduplicate, deduplicate_against_existing
+from processing.summarizer import generate_summary
 from scrapers import ALL_SCRAPERS
 from ui.dashboard_component import build_dashboard_html
 from ui.styles import get_custom_css
@@ -50,15 +51,10 @@ st.markdown(get_custom_css(), unsafe_allow_html=True)
 st.markdown(
     """
     <style>
-    /* Hide Streamlit deploy button and reduce top gap */
+    /* Hide Streamlit deploy button and remove top gap completely */
     [data-testid="stToolbar"] { display: none !important; }
     header[data-testid="stHeader"] { display: none !important; }
-    @media (min-width: 769px) {
-        .block-container { padding-top: 1rem !important; }
-    }
-    @media (max-width: 768px) {
-        .block-container { padding-top: 0.5rem !important; }
-    }
+    .block-container { padding-top: 0 !important; }
     .footer-copy {
         font-size: 14px;
         color: rgba(250, 250, 250, 0.6);
@@ -218,6 +214,9 @@ def live_dashboard():
         unsafe_allow_html=True,
     )
 
+    # ── AI summary ─────────────────────────────────────────────────
+    summary_text = generate_summary(all_events)
+
     # ── Unified map + feed component ──────────────────────────────
     # We pass the default desktop height explicitly so Streamlit doesn't render voids.
     # For mobile screens, an overriding CSS selector inside ui/styles.py expands it.
@@ -225,6 +224,7 @@ def live_dashboard():
         all_events=all_events,
         geo_events=map_events,
         component_height=720,
+        summary_text=summary_text,
     )
     # Streamlit wrapper iframe 
     components.html(dashboard_html, height=730, scrolling=False)
@@ -250,7 +250,7 @@ st.markdown("---")
 source_links = " · ".join(
     f"[{s.short_name}]({s.url})" for s in SOURCES
 )
-st.caption(f"Sources: {source_links}")
+st.caption(f"Data sources: {source_links}")
 st.caption(
     "Data refreshes automatically every ~60 seconds. "
     "This is an aggregation tool – all content belongs to the original publishers."

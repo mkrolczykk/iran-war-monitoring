@@ -138,6 +138,7 @@ def build_dashboard_html(
     all_events: List[NewsEvent],
     geo_events: List[NewsEvent],
     component_height: int = 750,
+    summary_text: str = "",
 ) -> str:
     """Build complete HTML page with Leaflet map + news feed side by side."""
     now = datetime.now(timezone.utc)
@@ -162,6 +163,7 @@ def build_dashboard_html(
             "summary": _esc((ev.summary or "")[:150]),
             "source_url": ev.source_url or "",
             "location": ev.location_name or "",
+            "timestamp_ms": int(ev.timestamp.timestamp() * 1000),
         }
         for ev in recent_geo
     ], ensure_ascii=False)
@@ -210,6 +212,9 @@ def build_dashboard_html(
 
     # Build feed cards HTML
     cards_html = "\n".join(_render_card(ev, now) for ev in feed_items)
+
+    # Escape summary for safe HTML embedding
+    summary_html = _esc(summary_text) if summary_text else ""
 
     css = get_custom_css()
 
@@ -443,6 +448,126 @@ def build_dashboard_html(
         box-shadow: none;
     }}
 
+    /* ── Timeline slider ────────────────────────── */
+    .timeline-bar {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: rgba(14,17,23,0.95);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        flex-shrink: 0;
+    }}
+    .timeline-play {{
+        background: none;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #ccc;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 11px;
+        transition: border-color 0.15s;
+        flex-shrink: 0;
+    }}
+    .timeline-play:hover {{ border-color: rgba(255,255,255,0.5); color: #fff; }}
+    .timeline-play.playing {{ border-color: #e74c3c; color: #e74c3c; }}
+    .timeline-slider {{
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 4px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+    }}
+    .timeline-slider::-webkit-slider-thumb {{
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #e74c3c;
+        box-shadow: 0 0 6px rgba(231,76,60,0.5);
+        cursor: grab;
+    }}
+    .timeline-slider::-moz-range-thumb {{
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #e74c3c;
+        border: none;
+        box-shadow: 0 0 6px rgba(231,76,60,0.5);
+        cursor: grab;
+    }}
+    .timeline-label {{
+        font-size: 10px;
+        color: rgba(255,255,255,0.5);
+        white-space: nowrap;
+        min-width: 70px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }}
+    /* ── Summary card ──────────────────────────── */
+    .summary-card {{
+        background: linear-gradient(135deg, rgba(231,76,60,0.08), rgba(155,89,182,0.06));
+        border: 1px solid rgba(231,76,60,0.15);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+    }}
+    .summary-card:hover {{ border-color: rgba(231,76,60,0.3); }}
+    .summary-header {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }}
+    .summary-label {{
+        font-size: 9px;
+        font-weight: 700;
+        color: #e74c3c;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }}
+    .summary-chevron {{
+        font-size: 10px;
+        color: rgba(255,255,255,0.3);
+        transition: transform 0.2s;
+    }}
+    .summary-card.open .summary-chevron {{ transform: rotate(180deg); }}
+    .summary-text {{
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.7);
+        line-height: 1.5;
+        margin-top: 6px;
+        display: none;
+    }}
+    .summary-card.open .summary-text {{ display: block; }}
+    /* ── Notification toggle ──────────────────── */
+    .notif-toggle {{
+        background: none;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.4);
+        border-radius: 4px;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        transition: all 0.15s;
+        flex-shrink: 0;
+    }}
+    .notif-toggle:hover {{ border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }}
+    .notif-toggle.enabled {{ border-color: #e74c3c; color: #e74c3c; }}
+
     /* ── Mobile layout ────────────────────────────── */
     @media (max-width: 768px) {{
         .dashboard {{
@@ -499,14 +624,26 @@ def build_dashboard_html(
             <div class="filter-bar">{filter_bar_html}</div>
             <div id="map"></div>
         </div>
+        <div class="timeline-bar">
+            <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">Event Timeline</span>
+            <button class="timeline-play" id="timelinePlay" title="Play/Pause — watch events appear chronologically on the map">&#9654;</button>
+            <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100" title="Drag to travel back in time and see when events occurred">
+            <span class="timeline-label" id="timelineLabel">Now</span>
+        </div>
     </div>
     <div class="feed-panel">
-        <div class="feed-header">
-            NEWS LIVE &nbsp;
-            <span style="font-weight:400;opacity:0.5;">
-                {now.strftime('%d/%m/%Y %H:%M:%S')} UTC
+        <div class="feed-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>
+                NEWS LIVE &nbsp;
+                <span style="font-weight:400;opacity:0.5;">
+                    {now.strftime('%d/%m/%Y %H:%M:%S')} UTC
+                </span>
             </span>
+            <button class="notif-toggle" id="notifToggle" title="Toggle sound & browser notifications for critical events">
+                🔔
+            </button>
         </div>
+        {f'<div class="summary-card open" id="summaryCard"><div class="summary-header" id="summaryToggle"><span class="summary-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Situation Overview</span><span class="summary-chevron">▼</span></div><div class="summary-text">' + summary_html + '</div></div>' if summary_html else ''}
         <div class="feed-filter-bar">{feed_filter_bar_html}</div>
         <div class="news-feed-container">
             {cards_html if cards_html else _empty_state()}
@@ -852,6 +989,198 @@ def build_dashboard_html(
             applyFeedFilters();
         }});
     }});
+
+    // ── Timeline slider ──────────────────────────────────────────
+    var slider = document.getElementById('timelineSlider');
+    var tlLabel = document.getElementById('timelineLabel');
+    var tlPlay = document.getElementById('timelinePlay');
+
+    // Compute time range from marker data
+    var timestamps = markersData.map(function(d) {{ return d.timestamp_ms; }}).filter(Boolean);
+    var tsMin = timestamps.length ? Math.min.apply(null, timestamps) : 0;
+    var tsMax = timestamps.length ? Math.max.apply(null, timestamps) : 0;
+    var tsRange = tsMax - tsMin;
+
+    function formatTs(ms) {{
+        if (!ms) return 'Now';
+        var d = new Date(ms);
+        var hh = String(d.getUTCHours()).padStart(2, '0');
+        var mm = String(d.getUTCMinutes()).padStart(2, '0');
+        var dd = String(d.getUTCDate()).padStart(2, '0');
+        var mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+        return dd + '/' + mo + ' ' + hh + ':' + mm;
+    }}
+
+    function applyTimeline(pct) {{
+        if (!tsRange || timestamps.length === 0) return;
+        var cutoff = tsMin + (pct / 100) * tsRange;
+        markersData.forEach(function(d) {{
+            var info = markerLookup[d.id];
+            if (!info) return;
+            // Only filter by timeline if the type is also active
+            if (d.timestamp_ms <= cutoff && activeTypes.has(d.type_label)) {{
+                info.marker.addTo(map);
+            }} else {{
+                map.removeLayer(info.marker);
+            }}
+        }});
+        if (pct >= 100) {{
+            tlLabel.textContent = 'Now';
+        }} else {{
+            tlLabel.textContent = formatTs(cutoff);
+        }}
+    }}
+
+    if (slider) {{
+        slider.addEventListener('input', function() {{
+            applyTimeline(parseInt(this.value));
+        }});
+    }}
+
+    // Auto-play animation
+    var isPlaying = false;
+    var playInterval = null;
+
+    if (tlPlay) {{
+        tlPlay.addEventListener('click', function() {{
+            isPlaying = !isPlaying;
+            this.classList.toggle('playing', isPlaying);
+            this.textContent = isPlaying ? '⏸' : '▶';
+
+            if (isPlaying) {{
+                // Start from beginning if at the end
+                if (parseInt(slider.value) >= 100) slider.value = 0;
+                playInterval = setInterval(function() {{
+                    var val = parseInt(slider.value) + 1;
+                    if (val > 100) {{
+                        val = 100;
+                        isPlaying = false;
+                        tlPlay.classList.remove('playing');
+                        tlPlay.textContent = '▶';
+                        clearInterval(playInterval);
+                        playInterval = null;
+                    }}
+                    slider.value = val;
+                    applyTimeline(val);
+                }}, 400);
+            }} else {{
+                if (playInterval) {{ clearInterval(playInterval); playInterval = null; }}
+            }}
+        }});
+    }}
+
+    // ── Notification system ───────────────────────────────────────
+    var notifBtn = document.getElementById('notifToggle');
+    var CRITICAL_TYPES = ['Airstrike', 'Missile', 'Explosion'];
+    var notifEnabled = false;
+    var audioCtx = null;
+
+    // Restore preference
+    try {{
+        notifEnabled = localStorage.getItem('icm_notif_enabled') === 'true';
+    }} catch(e) {{}}
+
+    function updateNotifBtn() {{
+        if (!notifBtn) return;
+        notifBtn.classList.toggle('enabled', notifEnabled);
+        notifBtn.title = notifEnabled
+            ? 'Notifications ON — click to disable'
+            : 'Toggle sound & browser notifications for critical events';
+    }}
+    updateNotifBtn();
+
+    function playAlertBeep() {{
+        try {{
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // Two-tone warning beep
+            [520, 680].forEach(function(freq, i) {{
+                var osc = audioCtx.createOscillator();
+                var gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.value = 0.15;
+                var start = audioCtx.currentTime + i * 0.18;
+                osc.start(start);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+                osc.stop(start + 0.15);
+            }});
+        }} catch(e) {{}}
+    }}
+
+    function showNotification(title, body) {{
+        try {{
+            if (Notification.permission === 'granted') {{
+                new Notification(title, {{
+                    body: body,
+                    icon: 'data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><text y=\".9em\" font-size=\"90\">🚨</text></svg>',
+                    tag: 'icm-alert',
+                    requireInteraction: false,
+                }});
+            }}
+        }} catch(e) {{}}
+    }}
+
+    // Check for new critical events
+    var seenIds = new Set();
+    try {{
+        var stored = sessionStorage.getItem('icm_seen_ids');
+        if (stored) JSON.parse(stored).forEach(function(id) {{ seenIds.add(id); }});
+    }} catch(e) {{}}
+
+    if (notifEnabled) {{
+        var newCritical = [];
+        markersData.forEach(function(d) {{
+            if (CRITICAL_TYPES.indexOf(d.type_label) !== -1 && !seenIds.has(d.id)) {{
+                newCritical.push(d);
+            }}
+        }});
+        if (newCritical.length > 0) {{
+            playAlertBeep();
+            var first = newCritical[0];
+            showNotification(
+                '⚠ ' + first.type_label.toUpperCase(),
+                first.title + (newCritical.length > 1 ? ' (+' + (newCritical.length - 1) + ' more)' : '')
+            );
+        }}
+    }}
+
+    // Mark all current events as seen
+    markersData.forEach(function(d) {{ seenIds.add(d.id); }});
+    try {{
+        sessionStorage.setItem('icm_seen_ids', JSON.stringify(Array.from(seenIds)));
+    }} catch(e) {{}}
+
+    if (notifBtn) {{
+        notifBtn.addEventListener('click', function() {{
+            notifEnabled = !notifEnabled;
+            updateNotifBtn();
+            try {{
+                localStorage.setItem('icm_notif_enabled', notifEnabled ? 'true' : 'false');
+            }} catch(e) {{}}
+            if (notifEnabled) {{
+                // Request notification permission + init audio context with user gesture
+                if ('Notification' in window && Notification.permission === 'default') {{
+                    Notification.requestPermission();
+                }}
+                if (!audioCtx) {{
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }}
+                // Play a very quiet test beep so user knows it works
+                playAlertBeep();
+            }}
+        }});
+    }}
+
+    // ── Summary card toggle ──────────────────────────────────────
+    var summaryToggle = document.getElementById('summaryToggle');
+    var summaryCard = document.getElementById('summaryCard');
+    if (summaryToggle && summaryCard) {{
+        summaryToggle.addEventListener('click', function() {{
+            summaryCard.classList.toggle('open');
+        }});
+    }}
 
 }})();
 </script>
