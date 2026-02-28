@@ -37,7 +37,7 @@ _CSS_COLORS = {
 }
 
 # Maximum age (hours) for events shown on the map
-MAP_MAX_AGE_HOURS = 8
+MAP_MAX_AGE_HOURS = 24
 
 # ─── SVG icon paths ──────────────────────────────────────────────────────
 # Each is rendered inside a 24x24 viewBox, white fill/stroke on colored bg.
