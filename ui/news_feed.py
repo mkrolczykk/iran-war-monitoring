@@ -178,7 +178,7 @@ def _severity_dots(severity: int) -> str:
 def _format_age(minutes: float) -> str:
     """Human-readable time ago string."""
     if minutes < 1:
-        return "just now"
+        return "recently added"
     if minutes < 60:
         return f"{int(minutes)} min ago"
     hours = minutes / 60

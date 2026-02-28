@@ -176,7 +176,7 @@ def _build_popup_html(event: NewsEvent, is_recent: bool) -> str:
 def _format_age(minutes: float) -> str:
     """Format age in human-readable form."""
     if minutes < 1:
-        return "just now"
+        return "recently added"
     if minutes < 60:
         return f"{int(minutes)}m ago"
     hours = minutes / 60
