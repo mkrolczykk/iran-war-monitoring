@@ -148,6 +148,81 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         trend_color = "#f1c40f"
         trend_label = "stable"
 
+    # ── Intensity trend SVG (24h, per-hour) ───────────────────────
+    # hourly dict already computed above: hourly[h] = count where h=hours_ago
+    # Build ordered list: oldest (23h ago) to newest (0h ago)
+    trend_points = [hourly.get(h, 0) for h in range(23, -1, -1)]
+    trend_max = max(trend_points) if trend_points else 1
+    trend_max = max(trend_max, 1)
+
+    # SVG dimensions
+    svg_w, svg_h = 600, 100
+    pad_l, pad_r, pad_t, pad_b = 0, 0, 5, 18  # space for labels at bottom
+    chart_w = svg_w - pad_l - pad_r
+    chart_h = svg_h - pad_t - pad_b
+    n = len(trend_points)
+    step_x = chart_w / max(n - 1, 1)
+
+    # Build polyline points
+    svg_line_pts = []
+    svg_area_pts = []
+    for i, val in enumerate(trend_points):
+        x = pad_l + i * step_x
+        y = pad_t + chart_h - (val / trend_max) * chart_h
+        svg_line_pts.append(f"{x:.1f},{y:.1f}")
+        svg_area_pts.append(f"{x:.1f},{y:.1f}")
+
+    # Close area polygon at bottom
+    area_bottom = pad_t + chart_h
+    svg_area_pts.append(f"{pad_l + (n - 1) * step_x:.1f},{area_bottom:.1f}")
+    svg_area_pts.append(f"{pad_l:.1f},{area_bottom:.1f}")
+
+    line_pts_str = " ".join(svg_line_pts)
+    area_pts_str = " ".join(svg_area_pts)
+
+    # Average line
+    avg_val = sum(trend_points) / max(len(trend_points), 1)
+    avg_y = pad_t + chart_h - (avg_val / trend_max) * chart_h
+
+    # Time labels (every 3 hours)
+    svg_labels = ""
+    for i in range(0, n, 3):
+        x = pad_l + i * step_x
+        t = now - timedelta(hours=23 - i)
+        lbl = t.strftime("%H:%M")
+        svg_labels += f'<text x="{x:.1f}" y="{svg_h}" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="7">{lbl}</text>'
+
+    # Dots on each point
+    svg_dots = ""
+    for i, val in enumerate(trend_points):
+        x = pad_l + i * step_x
+        y = pad_t + chart_h - (val / trend_max) * chart_h
+        if val > 0:
+            svg_dots += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.5" fill="#e74c3c" opacity="0.8"/>'
+
+    # Determine current gradient based on recent trend
+    if trend_label == "escalating":
+        grad_start, grad_end = "#e67e22", "#e74c3c"
+    elif trend_label == "calming":
+        grad_start, grad_end = "#e74c3c", "#2ecc71"
+    else:
+        grad_start, grad_end = "#f1c40f", "#e67e22"
+
+    trend_svg = f"""<svg viewBox="0 0 {svg_w} {svg_h}" width="100%" height="{svg_h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="trendGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="{grad_start}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="{grad_end}" stop-opacity="0.5"/>
+        </linearGradient>
+      </defs>
+      <polygon points="{area_pts_str}" fill="url(#trendGrad)"/>
+      <polyline points="{line_pts_str}" fill="none" stroke="{trend_color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <line x1="{pad_l}" y1="{avg_y:.1f}" x2="{pad_l + (n-1) * step_x:.1f}" y2="{avg_y:.1f}" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="{pad_l + (n-1) * step_x + 3:.1f}" y="{avg_y:.1f}" fill="rgba(255,255,255,0.25)" font-size="7" dominant-baseline="middle">avg</text>
+      {svg_dots}
+      {svg_labels}
+    </svg>"""
+
     no_data = '<div style="font-size:11px;color:rgba(255,255,255,0.3);">No data yet</div>'
 
     return f"""<style>
@@ -333,6 +408,12 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         <div class="an-hbar-container">
             {hour_bars}
         </div>
+    </div>
+    <div class="an-panel an-hourly-chart">
+        <div class="an-panel-title" style="margin-bottom:4px;">Intensity Trend (24h)
+            <span style="float:right;font-size:8px;font-weight:600;color:{trend_color};text-transform:uppercase;">{trend_icon} {trend_label}</span>
+        </div>
+        {trend_svg}
     </div>
     <div class="an-panel">
         <div class="an-panel-title">Event Types (24h)</div>

@@ -40,9 +40,13 @@ logger = get_logger("app")
 # Page config (must be the first Streamlit command)
 # ──────────────────────────────────────────────────────────────────────────
 
+from pathlib import Path
+
+_FAVICON = Path(__file__).parent / "assets" / "favicon.svg"
+
 st.set_page_config(
     page_title=APP_TITLE,
-    page_icon="🌍",
+    page_icon=str(_FAVICON) if _FAVICON.exists() else "📡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -240,7 +244,7 @@ def live_dashboard():
         '<div style="margin-top:0.5rem;margin-bottom:0.3rem;">'
         '<span style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.5);'
         'text-transform:uppercase;letter-spacing:0.1em;">'
-        '&#128202; Analytics &amp; Insights</span></div>',
+        'Analytics &amp; Insights</span></div>',
         unsafe_allow_html=True,
     )
     analytics_html = build_analytics_html(all_events)

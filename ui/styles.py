@@ -26,11 +26,13 @@ def get_custom_css() -> str:
         backdrop-filter: blur(10px);
     }
 
-    /* Full-width layout – no top padding, header starts at edge */
+    /* Constrained layout — 1440px max for comfortable reading on large screens */
     .block-container {
         padding: 0 1.5rem 1rem 1.5rem !important;
         margin-top: 0 !important;
-        max-width: 100% !important;
+        max-width: 1440px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
 
     /* ─── Header Bar ──────────────────────────────────────────── */
