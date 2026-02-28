@@ -179,7 +179,7 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
     trend_max = max(trend_max, 1)
 
     # SVG dimensions
-    svg_w, svg_h = 600, 100
+    svg_w, svg_h = 600, 140
     pad_l, pad_r, pad_t, pad_b = 0, 0, 5, 18  # space for labels at bottom
     chart_w = svg_w - pad_l - pad_r
     chart_h = svg_h - pad_t - pad_b
@@ -343,7 +343,7 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    height: 80px;
+    height: 140px;
     position: relative;
     padding-top: 5px;
 }}
