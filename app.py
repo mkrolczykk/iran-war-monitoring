@@ -173,7 +173,7 @@ st.markdown(
             <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:400;letter-spacing:0.02em;line-height:1.5;">
                 Near real-time news aggregation from {len([s for s in SOURCES if s.enabled])} sources:
                 {' · '.join(f'<a href="{s.website_url}" target="_blank" style="color:rgba(255,255,255,0.55);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);">{s.name}</a>' for s in SOURCES if s.enabled)}
-                <br/>Map shows last 24h · Data refreshes every ~60s · Hover a card to locate on map · Click filters to narrow view
+                <br/>Map shows last 72h · Data refreshes every ~60s · Hover a card to locate on map · Click filters to narrow view
             </div>
         </div>
         <div class="header-meta">

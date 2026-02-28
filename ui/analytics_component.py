@@ -42,23 +42,27 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
     """Build inline HTML analytics section for st.markdown."""
     now = datetime.now(timezone.utc)
 
-    # ── Hourly activity (last 24 h) ──────────────────────────────
-    hourly: dict[int, int] = {}
-    for h in range(24):
-        hourly[h] = 0
-    cutoff_24h = now - timedelta(hours=24)
-    recent_events = [ev for ev in events if ev.timestamp >= cutoff_24h]
+    # ── Analytics timeframe (72h for broad coverage) ─────────────
+    cutoff_analytics = now - timedelta(hours=72)
+    recent_events = [ev for ev in events if ev.timestamp >= cutoff_analytics]
 
-    for ev in recent_events:
+    # ── Hourly activity (last 72 h) ─────────────────────────
+    hourly: dict[int, int] = {}
+    for h in range(72):
+        hourly[h] = 0
+    cutoff_72h = now - timedelta(hours=72)
+    recent_72h_events = [ev for ev in events if ev.timestamp >= cutoff_72h]
+
+    for ev in recent_72h_events:
         hours_ago = int((now - ev.timestamp).total_seconds() / 3600)
-        if 0 <= hours_ago < 24:
+        if 0 <= hours_ago < 72:
             hourly[hours_ago] += 1
 
     max_hourly = max(hourly.values()) if hourly else 1
     max_hourly = max(max_hourly, 1)
 
     hour_bars = ""
-    for h in range(23, -1, -1):
+    for h in range(71, -1, -1):
         count = hourly[h]
         pct = (count / max_hourly) * 100
         t = now - timedelta(hours=h)
@@ -67,7 +71,7 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         hour_bars += (
             f'<div class="an-hbar-col" title="{label} UTC — {count} events">'
             f'<div class="an-hbar-fill" style="height:{max(pct, 2)}%;opacity:{opacity:.2f};"></div>'
-            f'<span class="an-hbar-lbl">{label if h % 3 == 0 else ""}</span>'
+            f'<span class="an-hbar-lbl">{label if h % 12 == 0 else ""}</span>'
             f'</div>'
         )
 
@@ -125,7 +129,7 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         )
 
     # ── Key metrics ──────────────────────────────────────────────
-    total_24h = len(recent_events)
+    total_72h = len(recent_events)
     critical_count = sum(
         1 for ev in recent_events
         if ev.display_config["label"] in {"Airstrike", "Missile", "Explosion"}
@@ -148,10 +152,10 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         trend_color = "#f1c40f"
         trend_label = "stable"
 
-    # ── Intensity trend SVG (24h, per-hour) ───────────────────────
+    # ── Intensity trend SVG (72h, per-hour) ───────────────────────
     # hourly dict already computed above: hourly[h] = count where h=hours_ago
-    # Build ordered list: oldest (23h ago) to newest (0h ago)
-    trend_points = [hourly.get(h, 0) for h in range(23, -1, -1)]
+    # Build ordered list: oldest (71h ago) to newest (0h ago)
+    trend_points = [hourly.get(h, 0) for h in range(71, -1, -1)]
     trend_max = max(trend_points) if trend_points else 1
     trend_max = max(trend_max, 1)
 
@@ -184,11 +188,11 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
     avg_val = sum(trend_points) / max(len(trend_points), 1)
     avg_y = pad_t + chart_h - (avg_val / trend_max) * chart_h
 
-    # Time labels (every 3 hours)
+    # Time labels (every 12 hours)
     svg_labels = ""
-    for i in range(0, n, 3):
+    for i in range(0, n, 12):
         x = pad_l + i * step_x
-        t = now - timedelta(hours=23 - i)
+        t = now - timedelta(hours=71 - i)
         lbl = t.strftime("%H:%M")
         svg_labels += f'<text x="{x:.1f}" y="{svg_h}" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="7">{lbl}</text>'
 
@@ -378,16 +382,51 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         font-size: 22px;
     }}
 }}
+.tooltip-trigger {{
+    position: relative;
+    cursor: help;
+    display: inline-block;
+}}
+.tooltip-content {{
+    visibility: hidden;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: normal;
+    width: max-content;
+    max-width: 200px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 1000;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}}
+.tooltip-trigger:hover .tooltip-content,
+.tooltip-trigger:active .tooltip-content {{
+    visibility: visible;
+    opacity: 1;
+}}
 </style>
 <div class="analytics">
     <div class="an-metrics">
         <div class="an-metric-card">
-            <div class="an-metric-value">{total_24h}</div>
-            <div class="an-metric-label">Events (24h)</div>
+            <div class="an-metric-value">{total_72h}</div>
+            <div class="an-metric-label">Events (72h)</div>
         </div>
         <div class="an-metric-card">
             <div class="an-metric-value">{critical_count}</div>
-            <div class="an-metric-label">Critical Events</div>
+            <div class="an-metric-label tooltip-trigger">
+                Critical Events <span style="opacity:0.6;font-size:10px;">ⓘ</span>
+                <div class="tooltip-content">Includes only kinetic events: Airstrike, Missile, and Explosion</div>
+            </div>
         </div>
         <div class="an-metric-card">
             <div class="an-metric-value blue">{geo_count}</div>
@@ -404,27 +443,27 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         </div>
     </div>
     <div class="an-panel an-hourly-chart">
-        <div class="an-panel-title">Event Activity (last 24h, by hour)</div>
+        <div class="an-panel-title">Event Activity (last 72h, by hour)</div>
         <div class="an-hbar-container">
             {hour_bars}
         </div>
     </div>
     <div class="an-panel an-hourly-chart">
-        <div class="an-panel-title" style="margin-bottom:4px;">Intensity Trend (24h)
+        <div class="an-panel-title" style="margin-bottom:4px;">Intensity Trend (72h)
             <span style="float:right;font-size:8px;font-weight:600;color:{trend_color};text-transform:uppercase;">{trend_icon} {trend_label}</span>
         </div>
         {trend_svg}
     </div>
     <div class="an-panel">
-        <div class="an-panel-title">Event Types (24h)</div>
+        <div class="an-panel-title">Event Types (72h)</div>
         {type_bars if type_bars else no_data}
     </div>
     <div class="an-panel">
-        <div class="an-panel-title">Source Activity (24h)</div>
+        <div class="an-panel-title">Source Activity (72h)</div>
         {source_bars if source_bars else no_data}
     </div>
     <div class="an-panel an-panel-full" style="grid-column: 1 / -1;">
-        <div class="an-panel-title">Top Affected Locations (24h)</div>
+        <div class="an-panel-title">Top Affected Locations (72h)</div>
         {loc_bars if loc_bars else no_data}
     </div>
 </div>"""

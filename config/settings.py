@@ -114,7 +114,7 @@ MAP_TILE_PROVIDER: str = "CartoDB dark_matter"
 # UI
 # ---------------------------------------------------------------------------
 
-MAX_NEWS_FEED_ITEMS: int = 100              # max items shown in the feed
+MAX_NEWS_FEED_ITEMS: int = 250              # max items shown in the feed
 EVENT_RECENT_MINUTES: int = 10              # events younger than this get a pulse
 APP_TITLE: str = "Iran Crisis News Scanner"
 

@@ -36,8 +36,8 @@ _CSS_COLORS = {
     "gray": "#95a5a6", "white": "#bdc3c7",
 }
 
-# Maximum age (hours) for events shown on the map
-MAP_MAX_AGE_HOURS = 24
+# Max age for map pins (in hours) to prevent map clutter over days
+MAP_MAX_AGE_HOURS = 72
 
 # ─── SVG icon paths ──────────────────────────────────────────────────────
 # Each is rendered inside a 24x24 viewBox, white fill/stroke on colored bg.
@@ -637,7 +637,7 @@ def build_dashboard_html(
             <div id="map"></div>
         </div>
         <div class="timeline-bar">
-            <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">Event Timeline</span>
+            <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">Event Timeline (72h)</span>
             <button class="timeline-play" id="timelinePlay" title="Play/Pause — watch events appear chronologically on the map">&#9654;</button>
             <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100" title="Drag to travel back in time and see when events occurred">
             <span class="timeline-label" id="timelineLabel">Now</span>
