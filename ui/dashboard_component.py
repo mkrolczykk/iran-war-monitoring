@@ -363,19 +363,16 @@ def build_dashboard_html(
         coordGroups[key].push(d);
     }});
 
-    // Apply tight, natural-looking offset
+    // Scatter markers randomly within a small rectangle around the city center
     Object.values(coordGroups).forEach(function(group) {{
         if (group.length <= 1) return;
         var n = group.length;
-        // Small radius: ~0.5-1km, scales gently with count
-        var baseRadius = 0.005;
-        var radius = baseRadius + n * 0.0015;
-        group.forEach(function(d, i) {{
-            var angle = (2 * Math.PI * i) / n + (Math.PI / 6); // offset start angle
-            // Add tiny jitter for natural feel
-            var jitter = (Math.random() - 0.5) * 0.002;
-            d.lat += Math.cos(angle) * radius + jitter;
-            d.lng += Math.sin(angle) * radius + jitter;
+        // Rectangle half-size scales slightly with count (~0.5-1.2km)
+        var halfW = 0.004 + n * 0.001;
+        var halfH = 0.003 + n * 0.0008;
+        group.forEach(function(d) {{
+            d.lat += (Math.random() - 0.5) * 2 * halfH;
+            d.lng += (Math.random() - 0.5) * 2 * halfW;
         }});
     }});
 
