@@ -349,7 +349,7 @@ def get_custom_css() -> str:
 
     /* ─── Folium map responsive height ────────────────────────── */
     [data-testid="stIFrame"] {
-        min-height: 500px;
+        min-height: 1200px;
     }
 
     @media (min-width: 769px) {

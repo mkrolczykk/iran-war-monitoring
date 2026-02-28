@@ -216,9 +216,10 @@ def live_dashboard():
     dashboard_html = build_dashboard_html(
         all_events=all_events,
         geo_events=map_events,
-        component_height=720,
+        component_height=1200,  # Ensure container is large enough on mobile
     )
-    components.html(dashboard_html, height=730, scrolling=False)
+    # Give the iframe enough height; CSS handles the max-height/scrolling internally
+    components.html(dashboard_html, height=1200, scrolling=False)
 
     # ── Error reporting ───────────────────────────────────────────
     if st.session_state.scrape_errors:
@@ -246,7 +247,4 @@ st.caption(
     "Data refreshes automatically every ~60 seconds. "
     "This is an aggregation tool – all content belongs to the original publishers."
 )
-st.markdown(
-    '<div class="footer-copy">&copy; 2026 created by mkrolczyk</div>',
-    unsafe_allow_html=True,
-)
+st.caption("&copy; 2026 created by mkrolczyk", text_alignment="center")

@@ -428,14 +428,18 @@ def build_dashboard_html(
         .dashboard {{
             flex-direction: column;
             gap: 8px;
+            height: 1200px !important;
         }}
         .map-panel {{
             flex: none;
-            height: 45%;
+            height: 50% !important;
         }}
         .feed-panel {{
             flex: none;
-            height: 53%;
+            height: 50% !important;
+        }}
+        .news-feed-container {{
+            max-height: 100% !important;
         }}
     }}
 
