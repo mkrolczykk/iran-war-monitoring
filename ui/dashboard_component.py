@@ -892,7 +892,19 @@ def build_dashboard_html(
         card.addEventListener('mouseenter', function() {{
             var id = this.dataset.eventId;
             if (hoverTimer) clearTimeout(hoverTimer);
-            hoverTimer = setTimeout(function() {{ highlightMarker(id); }}, 100);
+            hoverTimer = setTimeout(function() {{ 
+                var info = markerLookup[id];
+                if (info) {{
+                    map.setView([info.lat, info.lng], 10, {{ animate: true }});
+                    setTimeout(function() {{
+                        // Don't draw popup if mouse already left
+                        if (!hoverTimer) return;
+                        highlightMarker(id);
+                    }}, 300);
+                }} else {{
+                    highlightMarker(id);
+                }}
+            }}, 150);
         }});
         card.addEventListener('mouseleave', function() {{
             clearHighlight();
