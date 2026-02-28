@@ -537,11 +537,11 @@ def build_analytics_html(events: List[NewsEvent]) -> str:
         {type_bars if type_bars else no_data}
     </div>
     <div class="an-panel">
-        <div class="an-panel-title">Source Activity (72h)</div>
-        {source_bars if source_bars else no_data}
-    </div>
-    <div class="an-panel an-panel-full" style="grid-column: 1 / -1;">
         <div class="an-panel-title">Top Affected Locations (72h)</div>
         {loc_bars if loc_bars else no_data}
+    </div>
+    <div class="an-panel an-panel-full" style="grid-column: 1 / -1;">
+        <div class="an-panel-title">Source Activity (72h)</div>
+        {source_bars if source_bars else no_data}
     </div>
 </div>"""
