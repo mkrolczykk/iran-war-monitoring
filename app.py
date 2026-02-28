@@ -24,6 +24,7 @@ from config.settings import (
     APP_TITLE,
     REFRESH_INTERVAL_SECONDS,
     SOURCES,
+    SOURCES_BY_NAME,
 )
 from models.events import EventStore, NewsEvent
 from processing.deduplicator import deduplicate, deduplicate_against_existing
@@ -101,9 +102,13 @@ def _run_all_scrapers() -> list[NewsEvent]:
     all_events: list[NewsEvent] = []
     errors: list[str] = []
 
-    scrapers = [cls() for cls in ALL_SCRAPERS]
+    # Only run scrapers that are enabled in the configuration
+    scrapers = [
+        cls() for cls in ALL_SCRAPERS 
+        if cls.SOURCE_NAME in SOURCES_BY_NAME and SOURCES_BY_NAME[cls.SOURCE_NAME].enabled
+    ]
 
-    with ThreadPoolExecutor(max_workers=len(scrapers)) as pool:
+    with ThreadPoolExecutor(max_workers=len(scrapers) or 1) as pool:
         futures = {pool.submit(s.scrape): s for s in scrapers}
         try:
             for future in as_completed(futures, timeout=60):

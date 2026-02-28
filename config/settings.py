@@ -65,7 +65,6 @@ SOURCES: List[SourceConfig] = [
         website_url="https://news.un.org",
         color="#009edb",
         source_type="rss",
-        enabled=False,
     ),
     SourceConfig(
         name="BBC News",
