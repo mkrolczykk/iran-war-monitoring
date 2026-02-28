@@ -27,6 +27,8 @@ from config.settings import (
     SOURCES_BY_NAME,
 )
 from models.events import EventStore, NewsEvent
+import processing.categorizer
+import processing.geocoder
 from processing.deduplicator import deduplicate, deduplicate_against_existing
 from processing.summarizer import generate_summary
 from scrapers import ALL_SCRAPERS
