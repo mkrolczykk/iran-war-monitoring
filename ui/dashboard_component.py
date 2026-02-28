@@ -891,6 +891,9 @@ def build_dashboard_html(
         card.addEventListener('click', function() {{
             var info = markerLookup[this.dataset.eventId];
             if (info) {{
+                // Scroll the map into view to improve mobile UX
+                document.getElementById('map').scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                
                 map.setView([info.lat, info.lng], 10, {{ animate: true }});
                 setTimeout(function() {{
                     highlightMarker(card.dataset.eventId);
