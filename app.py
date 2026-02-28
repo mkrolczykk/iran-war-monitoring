@@ -276,4 +276,4 @@ st.caption(
     "Data refreshes automatically every ~60 seconds. "
     "This is an aggregation tool – all content belongs to the original publishers."
 )
-st.caption("&copy; 2026 created by mkrolczyk", text_alignment="center")
+st.caption("&copy; 2026 created by mkrolczyk", text_alignment="left")
