@@ -20,6 +20,14 @@ from datetime import datetime, timezone
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Pre-import root packages to prevent Streamlit hot-reload KeyErrors
+import config
+import models
+import processing
+import scrapers
+import ui
+import utils
+
 from config.settings import (
     APP_TITLE,
     REFRESH_INTERVAL_SECONDS,
