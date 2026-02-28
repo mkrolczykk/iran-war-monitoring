@@ -166,26 +166,47 @@ def build_dashboard_html(
         for ev in recent_geo
     ], ensure_ascii=False)
 
-    # Build filter buttons HTML — one per event type that has markers
     from collections import Counter
-    type_counts: Counter = Counter()
+
+    # ── Map filter buttons ──────────────────────────────────────
+    map_type_counts: Counter = Counter()
     for ev in recent_geo:
-        type_counts[ev.display_config["label"]] += 1
-    filter_buttons = []
+        map_type_counts[ev.display_config["label"]] += 1
+    map_filter_buttons = []
     for etype, cfg in EVENT_TYPE_CONFIG.items():
         label = cfg["label"]
-        cnt = type_counts.get(label, 0)
+        cnt = map_type_counts.get(label, 0)
         if cnt <= 0:
             continue
         color = _CSS_COLORS.get(cfg["color"], "#95a5a6")
         icon_svg = _TYPE_ICONS.get(label, _TYPE_ICONS["Other"])
         mini = _mini_pin_svg(color, icon_svg, size=12)
-        filter_buttons.append(
+        map_filter_buttons.append(
             f'<button class="filter-btn active" data-type="{label}" '
             f'style="--btn-color:{color};">{mini} {label} <span class="fbtn-count">{cnt}</span></button>'
         )
     all_btn = '<button class="filter-btn active" data-type="__all__" style="--btn-color:#aaa;">Clear all</button>'
-    filter_bar_html = all_btn + '<span style="width:1px;height:20px;background:rgba(255,255,255,0.15);align-self:center;"></span>' + ''.join(filter_buttons)
+    filter_bar_html = all_btn + '<span style="width:1px;height:20px;background:rgba(255,255,255,0.15);align-self:center;"></span>' + ''.join(map_filter_buttons)
+
+    # ── Feed filter buttons ─────────────────────────────────────
+    feed_type_counts: Counter = Counter()
+    for ev in feed_items:
+        feed_type_counts[ev.display_config["label"]] += 1
+    feed_filter_buttons = []
+    for etype, cfg in EVENT_TYPE_CONFIG.items():
+        label = cfg["label"]
+        cnt = feed_type_counts.get(label, 0)
+        if cnt <= 0:
+            continue
+        color = _CSS_COLORS.get(cfg["color"], "#95a5a6")
+        icon_svg = _TYPE_ICONS.get(label, _TYPE_ICONS["Other"])
+        mini = _mini_pin_svg(color, icon_svg, size=12)
+        feed_filter_buttons.append(
+            f'<button class="feed-filter-btn active" data-type="{label}" '
+            f'style="--btn-color:{color};">{mini} {label} <span class="fbtn-count">{cnt}</span></button>'
+        )
+    feed_all_btn = '<button class="feed-filter-btn active" data-type="__all__" style="--btn-color:#aaa;">Clear all</button>'
+    feed_filter_bar_html = feed_all_btn + '<span style="width:1px;height:16px;background:rgba(255,255,255,0.15);align-self:center;"></span>' + ''.join(feed_filter_buttons)
 
     # Build feed cards HTML
     cards_html = "\n".join(_render_card(ev, now) for ev in feed_items)
@@ -354,10 +375,52 @@ def build_dashboard_html(
         border-color: rgba(255,255,255,0.06);
         box-shadow: none;
     }}
+    .feed-empty-msg {{
+        text-align: center;
+        padding: 2rem 1rem;
+        color: rgba(255,255,255,0.3);
+        font-size: 0.8rem;
+        display: none;
+    }}
     .fbtn-count {{
         font-weight: 400;
         opacity: 0.6;
         font-size: 10px;
+    }}
+    /* ── Feed filter bar ─────────────────────────── */
+    .feed-filter-bar {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }}
+    .feed-filter-btn {{
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 7px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        background: rgba(14,17,23,0.85);
+        color: #ccc;
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }}
+    .feed-filter-btn:hover {{
+        background: rgba(255,255,255,0.1);
+    }}
+    .feed-filter-btn.active {{
+        border-color: var(--btn-color);
+        box-shadow: 0 0 4px color-mix(in srgb, var(--btn-color) 30%, transparent);
+    }}
+    .feed-filter-btn.dimmed {{
+        opacity: 0.3;
+        border-color: rgba(255,255,255,0.05);
+        box-shadow: none;
     }}
 
 </style>
@@ -375,8 +438,12 @@ def build_dashboard_html(
                 {now.strftime('%d/%m/%Y %H:%M:%S')} UTC
             </span>
         </div>
+        <div class="feed-filter-bar">{feed_filter_bar_html}</div>
         <div class="news-feed-container">
             {cards_html if cards_html else _empty_state()}
+            <div class="feed-empty-msg" id="feedEmptyMsg">
+                No events to display.<br/>Select at least one category above.
+            </div>
         </div>
         <div class="disclaimer">
             Information shown is partial and automated.
@@ -611,6 +678,81 @@ def build_dashboard_html(
     }});
 
     setTimeout(function() {{ map.invalidateSize(); }}, 100);
+
+    // ── Feed filter logic ────────────────────────────────────────
+    var feedActiveTypes = new Set();
+    document.querySelectorAll('.feed-filter-btn.active').forEach(function(b) {{
+        if (b.dataset.type !== '__all__') feedActiveTypes.add(b.dataset.type);
+    }});
+    var feedEmptyMsg = document.getElementById('feedEmptyMsg');
+
+    function applyFeedFilters() {{
+        var anyVisible = false;
+        document.querySelectorAll('.news-card[data-type]').forEach(function(card) {{
+            if (feedActiveTypes.size === 0 || !feedActiveTypes.has(card.dataset.type)) {{
+                card.style.display = 'none';
+            }} else {{
+                card.style.display = '';
+                anyVisible = true;
+            }}
+        }});
+        if (feedEmptyMsg) feedEmptyMsg.style.display = anyVisible ? 'none' : 'block';
+        document.querySelectorAll('.feed-filter-btn').forEach(function(b) {{
+            if (b.dataset.type === '__all__') return;
+            if (feedActiveTypes.has(b.dataset.type)) {{
+                b.classList.add('active');
+                b.classList.remove('dimmed');
+            }} else {{
+                b.classList.remove('active');
+                b.classList.add('dimmed');
+            }}
+        }});
+        updateFeedAllBtn();
+    }}
+
+    var feedAllBtn = document.querySelector('.feed-filter-btn[data-type="__all__"]');
+    function updateFeedAllBtn() {{
+        if (!feedAllBtn) return;
+        var allFeedTypes = new Set();
+        document.querySelectorAll('.feed-filter-btn:not([data-type="__all__"])').forEach(function(b) {{
+            allFeedTypes.add(b.dataset.type);
+        }});
+        if (feedActiveTypes.size === allFeedTypes.size) {{
+            feedAllBtn.textContent = 'Clear all';
+            feedAllBtn.classList.add('active');
+            feedAllBtn.classList.remove('dimmed');
+        }} else {{
+            feedAllBtn.textContent = 'Select all';
+            feedAllBtn.classList.remove('active');
+            feedAllBtn.classList.add('dimmed');
+        }}
+    }}
+
+    document.querySelectorAll('.feed-filter-btn').forEach(function(btn) {{
+        btn.addEventListener('click', function() {{
+            var type = this.dataset.type;
+            if (type === '__all__') {{
+                var allFeedTypes = [];
+                document.querySelectorAll('.feed-filter-btn:not([data-type="__all__"])').forEach(function(b) {{
+                    allFeedTypes.push(b.dataset.type);
+                }});
+                if (feedActiveTypes.size === allFeedTypes.length) {{
+                    feedActiveTypes.clear();
+                }} else {{
+                    allFeedTypes.forEach(function(t) {{ feedActiveTypes.add(t); }});
+                }}
+                applyFeedFilters();
+                return;
+            }}
+            if (feedActiveTypes.has(type)) {{
+                feedActiveTypes.delete(type);
+            }} else {{
+                feedActiveTypes.add(type);
+            }}
+            applyFeedFilters();
+        }});
+    }});
+
 }})();
 </script>
 </body>
@@ -656,12 +798,12 @@ def _render_card(event: NewsEvent, now: datetime) -> str:
             f'{_EXT_ICON_SVG} Source</a>'
         )
 
-    data_attrs = ""
+    data_attrs = f'data-type="{cfg["label"]}"'
     if event.has_location:
-        data_attrs = (
-            f'data-event-id="{event.id}" '
-            f'data-lat="{event.latitude}" '
-            f'data-lng="{event.longitude}"'
+        data_attrs += (
+            f' data-event-id="{event.id}"'
+            f' data-lat="{event.latitude}"'
+            f' data-lng="{event.longitude}"'
         )
 
     return f"""
