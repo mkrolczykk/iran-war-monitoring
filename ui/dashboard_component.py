@@ -423,6 +423,22 @@ def build_dashboard_html(
         box-shadow: none;
     }}
 
+    /* ── Mobile layout ────────────────────────────── */
+    @media (max-width: 768px) {{
+        .dashboard {{
+            flex-direction: column;
+            gap: 8px;
+        }}
+        .map-panel {{
+            flex: none;
+            height: 45%;
+        }}
+        .feed-panel {{
+            flex: none;
+            height: 53%;
+        }}
+    }}
+
 </style>
 </head>
 <body>

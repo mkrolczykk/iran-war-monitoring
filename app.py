@@ -52,8 +52,20 @@ st.markdown(
     <style>
     /* Hide Streamlit deploy button and reduce top gap */
     [data-testid="stToolbar"] { display: none !important; }
-    header[data-testid="stHeader"] { height: 0 !important; min-height: 0 !important; padding: 0 !important; }
-    .block-container { padding-top: 1rem !important; }
+    header[data-testid="stHeader"] { display: none !important; }
+    @media (min-width: 769px) {
+        .block-container { padding-top: 1rem !important; }
+    }
+    @media (max-width: 768px) {
+        .block-container { padding-top: 0.5rem !important; }
+    }
+    .footer-copy {
+        font-size: 14px;
+        color: rgba(250, 250, 250, 0.6);
+    }
+    @media (max-width: 768px) {
+        .footer-copy { text-align: center; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -234,4 +246,7 @@ st.caption(
     "Data refreshes automatically every ~60 seconds. "
     "This is an aggregation tool – all content belongs to the original publishers."
 )
-st.caption("&copy; 2026 created by mkrolczyk")
+st.markdown(
+    '<div class="footer-copy">&copy; 2026 created by mkrolczyk</div>',
+    unsafe_allow_html=True,
+)
