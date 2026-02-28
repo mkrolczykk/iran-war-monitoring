@@ -30,6 +30,7 @@ from processing.deduplicator import deduplicate, deduplicate_against_existing
 from processing.summarizer import generate_summary
 from scrapers import ALL_SCRAPERS
 from ui.dashboard_component import build_dashboard_html
+from ui.analytics_component import build_analytics_html
 from ui.styles import get_custom_css
 from utils.logger import get_logger
 
@@ -228,6 +229,17 @@ def live_dashboard():
     )
     # Streamlit wrapper iframe 
     components.html(dashboard_html, height=730, scrolling=False)
+
+    # ── Analytics section ──────────────────────────────────────────
+    st.markdown(
+        '<div style="margin-top:0.5rem;margin-bottom:0.3rem;">'
+        '<span style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.5);'
+        'text-transform:uppercase;letter-spacing:0.1em;">'
+        '&#128202; Analytics &amp; Insights</span></div>',
+        unsafe_allow_html=True,
+    )
+    analytics_html = build_analytics_html(all_events)
+    st.markdown(analytics_html, unsafe_allow_html=True)
 
     # ── Error reporting ───────────────────────────────────────────
     if st.session_state.scrape_errors:
