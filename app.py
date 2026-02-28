@@ -212,6 +212,11 @@ def live_dashboard():
         1 for ev in all_events
         if ev.age_minutes(now) <= MAP_MAX_AGE_HOURS * 60
     )
+    recent_geo_count = sum(
+        1 for ev in map_events
+        if ev.age_minutes(now) <= MAP_MAX_AGE_HOURS * 60
+    )
+    
     st.markdown(
         f"""
         <div style="display:flex;align-items:center;justify-content:space-between;
@@ -219,7 +224,7 @@ def live_dashboard():
             <span class="event-count">
                 {len(all_events)} events total &middot;
                 {recent_count} in last {MAP_MAX_AGE_HOURS}h &middot;
-                {len(map_events)} geolocated
+                {recent_geo_count} geolocated
             </span>
             <span style="font-size:0.7rem;color:rgba(255,255,255,0.35);">
                 Last update: {now_utc}
