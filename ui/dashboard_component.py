@@ -166,6 +166,27 @@ def build_dashboard_html(
         for ev in recent_geo
     ], ensure_ascii=False)
 
+    # Build filter buttons HTML — one per event type that has markers
+    from collections import Counter
+    type_counts: Counter = Counter()
+    for ev in recent_geo:
+        type_counts[ev.display_config["label"]] += 1
+    filter_buttons = []
+    for etype, cfg in EVENT_TYPE_CONFIG.items():
+        label = cfg["label"]
+        cnt = type_counts.get(label, 0)
+        if cnt <= 0:
+            continue
+        color = _CSS_COLORS.get(cfg["color"], "#95a5a6")
+        icon_svg = _TYPE_ICONS.get(label, _TYPE_ICONS["Other"])
+        mini = _mini_pin_svg(color, icon_svg, size=12)
+        filter_buttons.append(
+            f'<button class="filter-btn active" data-type="{label}" '
+            f'style="--btn-color:{color};">{mini} {label} <span class="fbtn-count">{cnt}</span></button>'
+        )
+    all_btn = '<button class="filter-btn active" data-type="__all__" style="--btn-color:#aaa;">Clear all</button>'
+    filter_bar_html = all_btn + '<span style="width:1px;height:20px;background:rgba(255,255,255,0.15);align-self:center;"></span>' + ''.join(filter_buttons)
+
     # Build feed cards HTML
     cards_html = "\n".join(_render_card(ev, now) for ev in feed_items)
 
@@ -292,11 +313,59 @@ def build_dashboard_html(
         border-top: 1px solid rgba(255,255,255,0.06);
         line-height: 1.4;
     }}
+    /* ── Filter bar ──────────────────────────────── */
+    .filter-bar {{
+        position: absolute;
+        top: 10px;
+        left: 50px;
+        right: 10px;
+        z-index: 1000;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        pointer-events: auto;
+    }}
+    .filter-btn {{
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 16px;
+        background: rgba(14,17,23,0.85);
+        color: #ddd;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }}
+    .filter-btn:hover {{
+        background: rgba(255,255,255,0.12);
+    }}
+    .filter-btn.active {{
+        border-color: var(--btn-color);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--btn-color) 40%, transparent);
+    }}
+    .filter-btn.dimmed {{
+        opacity: 0.35;
+        border-color: rgba(255,255,255,0.06);
+        box-shadow: none;
+    }}
+    .fbtn-count {{
+        font-weight: 400;
+        opacity: 0.6;
+        font-size: 10px;
+    }}
+
 </style>
 </head>
 <body>
 <div class="dashboard">
-    <div class="map-panel">
+    <div class="map-panel" style="position:relative;">
+        <div class="filter-bar">{filter_bar_html}</div>
         <div id="map"></div>
     </div>
     <div class="feed-panel">
@@ -354,6 +423,7 @@ def build_dashboard_html(
     // ── Spread overlapping markers naturally ─────────────────────
     var markersData = {markers_json};
     var markerLookup = {{}};
+    var markersByType = {{}};
 
     // Group by approximate location (~1km precision)
     var coordGroups = {{}};
@@ -420,7 +490,77 @@ def build_dashboard_html(
         marker.bindPopup(popupHtml, {{ maxWidth: 300 }});
         marker.addTo(map);
         markerLookup[d.id] = {{ marker: marker, lat: d.lat, lng: d.lng, color: d.color }};
+
+        // Track markers by type for filtering
+        if (!markersByType[d.type_label]) markersByType[d.type_label] = [];
+        markersByType[d.type_label].push(marker);
     }});
+
+    // ── Multi-toggle filter logic ───────────────────────────────
+    // All types start active; clicking toggles that type on/off
+    var activeTypes = new Set(Object.keys(markersByType));
+
+    function applyFilters() {{
+        Object.keys(markersByType).forEach(function(t) {{
+            markersByType[t].forEach(function(m) {{
+                if (activeTypes.has(t)) m.addTo(map);
+                else map.removeLayer(m);
+            }});
+        }});
+        document.querySelectorAll('.filter-btn').forEach(function(b) {{
+            if (activeTypes.has(b.dataset.type)) {{
+                b.classList.add('active');
+                b.classList.remove('dimmed');
+            }} else {{
+                b.classList.remove('active');
+                b.classList.add('dimmed');
+            }}
+        }});
+    }}
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {{
+        btn.addEventListener('click', function() {{
+            var type = this.dataset.type;
+
+            if (type === '__all__') {{
+                var allTypes = Object.keys(markersByType);
+                if (activeTypes.size === allTypes.length) {{
+                    // All are on → clear all
+                    activeTypes.clear();
+                }} else {{
+                    // Some or none on → select all
+                    allTypes.forEach(function(t) {{ activeTypes.add(t); }});
+                }}
+                applyFilters();
+                updateAllBtn();
+                return;
+            }}
+
+            if (activeTypes.has(type)) {{
+                activeTypes.delete(type);
+            }} else {{
+                activeTypes.add(type);
+            }}
+            applyFilters();
+            updateAllBtn();
+        }});
+    }});
+
+    // Update "All" button label dynamically
+    var allBtn = document.querySelector('.filter-btn[data-type="__all__"]');
+    function updateAllBtn() {{
+        if (!allBtn) return;
+        var total = Object.keys(markersByType).length;
+        if (activeTypes.size === total) {{
+            allBtn.textContent = 'Clear all';
+            allBtn.classList.add('active');
+            allBtn.classList.remove('dimmed');
+        }} else {{
+            allBtn.textContent = 'Select all';
+            allBtn.classList.remove('active');
+            allBtn.classList.add('dimmed');
+        }}
+    }}
 
     // ── Hover interaction ────────────────────────────────────────
     var highlightCircle = null;
