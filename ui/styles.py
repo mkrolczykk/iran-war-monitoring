@@ -345,11 +345,18 @@ def get_custom_css() -> str:
         .news-card {
             padding: 0.55rem;
         }
+
+        /* Expand Streamlit component wrapper natively on mobile */
+        iframe,
+        div[data-testid="stElementContainer"]:has(iframe) {
+            height: 1200px !important;
+            max-height: none !important;
+        }
     }
 
     /* ─── Folium map responsive height ────────────────────────── */
     [data-testid="stIFrame"] {
-        min-height: 1200px;
+        min-height: 500px;
     }
 
     @media (min-width: 769px) {

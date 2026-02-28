@@ -213,13 +213,15 @@ def live_dashboard():
     )
 
     # ── Unified map + feed component ──────────────────────────────
+    # We pass the default desktop height explicitly so Streamlit doesn't render voids.
+    # For mobile screens, an overriding CSS selector inside ui/styles.py expands it.
     dashboard_html = build_dashboard_html(
         all_events=all_events,
         geo_events=map_events,
-        component_height=1200,  # Ensure container is large enough on mobile
+        component_height=720,
     )
-    # Give the iframe enough height; CSS handles the max-height/scrolling internally
-    components.html(dashboard_html, height=1200, scrolling=False)
+    # Streamlit wrapper iframe 
+    components.html(dashboard_html, height=730, scrolling=False)
 
     # ── Error reporting ───────────────────────────────────────────
     if st.session_state.scrape_errors:

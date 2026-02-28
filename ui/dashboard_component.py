@@ -232,7 +232,8 @@ def build_dashboard_html(
     }}
     .dashboard {{
         display: flex;
-        height: {component_height}px;
+        height: 100vh;
+        max-height: 720px;
         gap: 12px;
     }}
     .map-panel {{
@@ -429,6 +430,7 @@ def build_dashboard_html(
             flex-direction: column;
             gap: 8px;
             height: 1200px !important;
+            max-height: none !important;
         }}
         .map-panel {{
             flex: none;
