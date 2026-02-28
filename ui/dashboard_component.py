@@ -588,6 +588,12 @@ def build_dashboard_html(
         .map-section {{
             flex: none;
             height: 50% !important;
+            order: 2;
+        }}
+        .feed-panel {{
+            flex: none;
+            height: 50% !important;
+            order: 1;
         }}
         /* Show filter bar ABOVE map on mobile — matches feed filter style */
         .map-filters-above {{
@@ -616,10 +622,6 @@ def build_dashboard_html(
         }}
         .map-panel {{
             flex: 1;
-        }}
-        .feed-panel {{
-            flex: none;
-            height: 50% !important;
         }}
         .news-feed-container {{
             max-height: 100% !important;
