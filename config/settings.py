@@ -73,13 +73,6 @@ SOURCES: List[SourceConfig] = [
         source_type="html",
     ),
     SourceConfig(
-        name="Liveuamap",
-        short_name="LIVUA",
-        url="https://iran.liveuamap.com/",
-        color="#d35400",
-        source_type="html",
-    ),
-    SourceConfig(
         name="NPR",
         short_name="NPR",
         url="https://feeds.npr.org/1004/rss.xml",

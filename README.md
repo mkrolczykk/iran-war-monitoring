@@ -9,7 +9,7 @@ Real-time monitoring dashboard that aggregates live news from 7 major internatio
 ## ✨ Features
 
 - **Interactive dark-themed map** – powered by Folium with CartoDB Dark Matter tiles
-- **7 live news sources** – Al Jazeera, Reuters, NBC News, Washington Post, CNN, AP News, Liveuamap
+- **Live news sources** – Al Jazeera, Reuters, NBC News, Washington Post, CNN, AP News, NPR, BBC, etc.
 - **Colour-coded markers** – airstrikes (red), missiles (purple), explosions (orange), alerts (yellow), military (blue)
 - **Live news feed** – scrollable panel with source badges, severity indicators, and relative timestamps
 - **Auto-refresh** – fetches new data every ~60 seconds
@@ -67,8 +67,7 @@ iran-war-monitoring/
 │   ├── reuters.py            # Reuters live
 │   ├── nbcnews.py            # NBC News live blog
 │   ├── washpost.py           # Washington Post live updates
-│   ├── cnn.py                # CNN live updates
-│   └── liveuamap.py          # Liveuamap (API + HTML fallback)
+│   └── cnn.py                # CNN live updates
 │
 ├── processing/
 │   ├── geocoder.py           # Location extraction from text

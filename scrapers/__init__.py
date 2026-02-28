@@ -6,7 +6,6 @@ from scrapers.jpost import JPostRSSScraper
 from scrapers.unnews import UNNewsRSSScraper
 from scrapers.bbc import BBCNewsRSSScraper
 from scrapers.cnn import CNNScraper
-from scrapers.liveuamap import LiveUAMapScraper
 from scrapers.npr import NPRRSSScraper
 
 ALL_SCRAPERS = [
@@ -17,6 +16,5 @@ ALL_SCRAPERS = [
     UNNewsRSSScraper,
     BBCNewsRSSScraper,
     CNNScraper,
-    LiveUAMapScraper,
     NPRRSSScraper,
 ]

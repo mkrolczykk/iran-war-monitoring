@@ -876,7 +876,6 @@ def _source_badge_class(source_name: str) -> str:
         "unnews": "source-unnews",
         "bbcnews": "source-bbcnews",
         "cnn": "source-cnn",
-        "liveuamap": "source-liveuamap",
         "npr": "source-npr",
     }
     return mapping.get(key, "source-default")

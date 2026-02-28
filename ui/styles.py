@@ -236,7 +236,6 @@ def get_custom_css() -> str:
     .source-unnews        { background: rgba(0,158,219,0.15);  color: #009edb; }
     .source-bbcnews       { background: rgba(187,25,25,0.15);  color: #e44; }
     .source-cnn           { background: rgba(204,0,0,0.15);    color: #ff4444; }
-    .source-liveuamap     { background: rgba(211,84,0,0.15);   color: #d35400; }
     .source-npr           { background: rgba(26,26,46,0.2);    color: #8888cc; }
     .source-default       { background: rgba(255,255,255,0.06);color: #888; }
 
