@@ -28,7 +28,7 @@ from config.settings import (
 from models.events import EventStore, NewsEvent
 from processing.deduplicator import deduplicate
 from scrapers import ALL_SCRAPERS
-from ui.dashboard_component import build_dashboard_html, _render_stats
+from ui.dashboard_component import build_dashboard_html
 from ui.styles import get_custom_css
 from utils.logger import get_logger
 
@@ -45,8 +45,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Inject custom CSS
+# Inject custom CSS + hide deploy button
 st.markdown(get_custom_css(), unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    /* Hide Streamlit deploy button and reduce top gap */
+    [data-testid="stToolbar"] { display: none !important; }
+    header[data-testid="stHeader"] { height: 0 !important; min-height: 0 !important; padding: 0 !important; }
+    .block-container { padding-top: 1rem !important; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -128,7 +139,13 @@ if st.session_state.last_refresh == 0.0:
 st.markdown(
     f"""
     <div class="app-header">
-        <h1>{APP_TITLE}</h1>
+        <div>
+            <h1 style="margin-bottom:2px;">{APP_TITLE}</h1>
+            <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:400;letter-spacing:0.02em;">
+                Real-time aggregation from {len(SOURCES)} news sources · Map shows last 8h
+                · Hover a card to locate on map · Click filters to narrow view
+            </div>
+        </div>
         <div class="header-meta">
             <span class="live-indicator">
                 <span class="live-dot"></span> LIVE
@@ -159,12 +176,20 @@ def live_dashboard():
     now_utc = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S UTC")
 
     # ── Status line ───────────────────────────────────────────────
+    from ui.dashboard_component import MAP_MAX_AGE_HOURS
+    now = datetime.now(timezone.utc)
+    recent_count = sum(
+        1 for ev in all_events
+        if ev.age_minutes(now) <= MAP_MAX_AGE_HOURS * 60
+    )
     st.markdown(
         f"""
         <div style="display:flex;align-items:center;justify-content:space-between;
                     flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;">
             <span class="event-count">
-                {len(all_events)} events &middot; {len(map_events)} geolocated
+                {len(all_events)} events total &middot;
+                {recent_count} in last {MAP_MAX_AGE_HOURS}h &middot;
+                {len(map_events)} geolocated
             </span>
             <span style="font-size:0.7rem;color:rgba(255,255,255,0.35);">
                 Last update: {now_utc}
@@ -173,10 +198,6 @@ def live_dashboard():
         """,
         unsafe_allow_html=True,
     )
-
-    # ── Stats bar ─────────────────────────────────────────────────
-    if all_events:
-        st.markdown(_render_stats(all_events), unsafe_allow_html=True)
 
     # ── Unified map + feed component ──────────────────────────────
     dashboard_html = build_dashboard_html(

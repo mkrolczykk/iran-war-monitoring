@@ -112,7 +112,7 @@ MAP_TILE_PROVIDER: str = "CartoDB dark_matter"
 
 MAX_NEWS_FEED_ITEMS: int = 100              # max items shown in the feed
 EVENT_RECENT_MINUTES: int = 10              # events younger than this get a pulse
-APP_TITLE: str = "Iran Crisis Monitor"
+APP_TITLE: str = "Iran Crisis News Scanner"
 
 # ---------------------------------------------------------------------------
 # User-Agent rotation pool (polite scraping)
