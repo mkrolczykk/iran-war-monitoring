@@ -117,6 +117,7 @@ def get_custom_css() -> str:
         padding-right: 4px;
         scrollbar-width: thin;
         scrollbar-color: rgba(255,255,255,0.15) transparent;
+        -webkit-overflow-scrolling: touch;
     }
 
     .news-feed-container::-webkit-scrollbar {
@@ -150,6 +151,7 @@ def get_custom_css() -> str:
         margin-bottom: 0.4rem;
         transition: all 0.2s ease;
         cursor: default;
+        contain: content;
     }
 
     .news-card:hover {

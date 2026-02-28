@@ -26,7 +26,7 @@ from config.settings import (
     SOURCES,
 )
 from models.events import EventStore, NewsEvent
-from processing.deduplicator import deduplicate
+from processing.deduplicator import deduplicate, deduplicate_against_existing
 from scrapers import ALL_SCRAPERS
 from ui.dashboard_component import build_dashboard_html
 from ui.styles import get_custom_css
@@ -119,6 +119,12 @@ def _run_all_scrapers() -> list[NewsEvent]:
                     logger.warning("%s timed out", scraper.SOURCE_NAME)
 
     all_events = deduplicate(all_events)
+
+    # Second pass: drop events that duplicate something already in the store
+    existing = st.session_state.event_store.get_all()
+    if existing:
+        all_events = deduplicate_against_existing(all_events, existing)
+
     st.session_state.scrape_errors = errors
     return all_events
 

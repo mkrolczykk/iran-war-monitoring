@@ -220,9 +220,10 @@ def build_dashboard_html(
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 {css}
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * {{ margin:0; padding:0; box-sizing:border-box; }}
     body {{
         background: #0e1117;
@@ -236,11 +237,18 @@ def build_dashboard_html(
         max-height: 720px;
         gap: 12px;
     }}
-    .map-panel {{
+    .map-section {{
         flex: 7;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }}
+    .map-panel {{
+        flex: 1;
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid rgba(255,255,255,0.06);
+        position: relative;
     }}
     #map {{
         width: 100%;
@@ -258,6 +266,7 @@ def build_dashboard_html(
         padding-right: 4px;
         scrollbar-width: thin;
         scrollbar-color: rgba(255,255,255,0.15) transparent;
+        -webkit-overflow-scrolling: touch;
     }}
     .news-feed-container::-webkit-scrollbar {{ width: 4px; }}
     .news-feed-container::-webkit-scrollbar-track {{ background: transparent; }}
@@ -278,7 +287,7 @@ def build_dashboard_html(
         width: 30px;
         height: 42px;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        transition: transform 0.15s ease;
+        will-change: transform;
     }}
     .pin-marker:hover {{
         transform: scale(1.15);
@@ -319,12 +328,19 @@ def build_dashboard_html(
     .marker-highlight {{
         animation: markerPulse 1s infinite;
     }}
+    .news-card {{
+        contain: content;
+    }}
     .news-card[data-lat] {{
         cursor: pointer;
     }}
     .news-card[data-lat]:hover {{
         border-color: rgba(231,76,60,0.4);
         background: rgba(231,76,60,0.06);
+    }}
+    /* Lazy-loaded cards: hidden initially, revealed by IntersectionObserver */
+    .news-card.lazy-hidden {{
+        display: none;
     }}
     /* Disclaimer bar */
     .disclaimer {{
@@ -335,7 +351,10 @@ def build_dashboard_html(
         border-top: 1px solid rgba(255,255,255,0.06);
         line-height: 1.4;
     }}
-    /* ── Filter bar ──────────────────────────────── */
+    /* ── Filter bar (desktop: inside map via absolute) ── */
+    .map-filters-above {{
+        display: none;  /* hidden on desktop */
+    }}
     .filter-bar {{
         position: absolute;
         top: 10px;
@@ -360,7 +379,7 @@ def build_dashboard_html(
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: opacity 0.15s, border-color 0.15s, box-shadow 0.15s;
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
     }}
@@ -409,7 +428,7 @@ def build_dashboard_html(
         font-size: 10px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: opacity 0.15s, border-color 0.15s, box-shadow 0.15s;
     }}
     .feed-filter-btn:hover {{
         background: rgba(255,255,255,0.1);
@@ -428,13 +447,38 @@ def build_dashboard_html(
     @media (max-width: 768px) {{
         .dashboard {{
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             height: 1200px !important;
             max-height: none !important;
         }}
-        .map-panel {{
+        .map-section {{
             flex: none;
             height: 50% !important;
+        }}
+        /* Show filter bar ABOVE map on mobile — matches feed filter style */
+        .map-filters-above {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }}
+        /* Shrink map filter buttons to match feed-filter-btn size */
+        .map-filters-above .filter-btn {{
+            display: inline-flex !important;
+            padding: 2px 7px;
+            font-size: 10px;
+            border-radius: 12px;
+            gap: 3px;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }}
+        /* Hide the overlay version on mobile */
+        .filter-bar {{
+            display: none !important;
+        }}
+        .map-panel {{
+            flex: 1;
         }}
         .feed-panel {{
             flex: none;
@@ -449,9 +493,12 @@ def build_dashboard_html(
 </head>
 <body>
 <div class="dashboard">
-    <div class="map-panel" style="position:relative;">
-        <div class="filter-bar">{filter_bar_html}</div>
-        <div id="map"></div>
+    <div class="map-section">
+        <div class="map-filters-above">{filter_bar_html}</div>
+        <div class="map-panel">
+            <div class="filter-bar">{filter_bar_html}</div>
+            <div id="map"></div>
+        </div>
     </div>
     <div class="feed-panel">
         <div class="feed-header">
@@ -526,7 +573,6 @@ def build_dashboard_html(
     Object.values(coordGroups).forEach(function(group) {{
         if (group.length <= 1) return;
         var n = group.length;
-        // Rectangle half-size scales slightly with count (~0.5-1.2km)
         var halfW = 0.004 + n * 0.001;
         var halfH = 0.003 + n * 0.0008;
         group.forEach(function(d) {{
@@ -580,13 +626,11 @@ def build_dashboard_html(
         marker.addTo(map);
         markerLookup[d.id] = {{ marker: marker, lat: d.lat, lng: d.lng, color: d.color }};
 
-        // Track markers by type for filtering
         if (!markersByType[d.type_label]) markersByType[d.type_label] = [];
         markersByType[d.type_label].push(marker);
     }});
 
     // ── Multi-toggle filter logic ───────────────────────────────
-    // All types start active; clicking toggles that type on/off
     var activeTypes = new Set(Object.keys(markersByType));
 
     function applyFilters() {{
@@ -596,7 +640,9 @@ def build_dashboard_html(
                 else map.removeLayer(m);
             }});
         }});
+        // Update both desktop and mobile filter button sets
         document.querySelectorAll('.filter-btn').forEach(function(b) {{
+            if (b.dataset.type === '__all__') return;
             if (activeTypes.has(b.dataset.type)) {{
                 b.classList.add('active');
                 b.classList.remove('dimmed');
@@ -607,6 +653,7 @@ def build_dashboard_html(
         }});
     }}
 
+    // Attach click handlers to ALL .filter-btn elements (desktop overlay + mobile above-map)
     document.querySelectorAll('.filter-btn').forEach(function(btn) {{
         btn.addEventListener('click', function() {{
             var type = this.dataset.type;
@@ -614,10 +661,8 @@ def build_dashboard_html(
             if (type === '__all__') {{
                 var allTypes = Object.keys(markersByType);
                 if (activeTypes.size === allTypes.length) {{
-                    // All are on → clear all
                     activeTypes.clear();
                 }} else {{
-                    // Some or none on → select all
                     allTypes.forEach(function(t) {{ activeTypes.add(t); }});
                 }}
                 applyFilters();
@@ -635,31 +680,31 @@ def build_dashboard_html(
         }});
     }});
 
-    // Update "All" button label dynamically
-    var allBtn = document.querySelector('.filter-btn[data-type="__all__"]');
+    // Update ALL "All" buttons (both desktop + mobile)
     function updateAllBtn() {{
-        if (!allBtn) return;
         var total = Object.keys(markersByType).length;
-        if (activeTypes.size === total) {{
-            allBtn.textContent = 'Clear all';
-            allBtn.classList.add('active');
-            allBtn.classList.remove('dimmed');
-        }} else {{
-            allBtn.textContent = 'Select all';
-            allBtn.classList.remove('active');
-            allBtn.classList.add('dimmed');
-        }}
+        document.querySelectorAll('.filter-btn[data-type="__all__"]').forEach(function(btn) {{
+            if (activeTypes.size === total) {{
+                btn.textContent = 'Clear all';
+                btn.classList.add('active');
+                btn.classList.remove('dimmed');
+            }} else {{
+                btn.textContent = 'Select all';
+                btn.classList.remove('active');
+                btn.classList.add('dimmed');
+            }}
+        }});
     }}
 
-    // ── Hover interaction ────────────────────────────────────────
+    // ── Hover interaction (debounced for performance) ────────────
     var highlightCircle = null;
+    var hoverTimer = null;
 
     function highlightMarker(eventId) {{
         clearHighlight();
         var info = markerLookup[eventId];
         if (!info) return;
 
-        // Center map on marker smoothly
         map.panTo([info.lat, info.lng], {{ animate: true, duration: 0.4 }});
 
         highlightCircle = L.circleMarker([info.lat, info.lng], {{
@@ -674,6 +719,7 @@ def build_dashboard_html(
     }}
 
     function clearHighlight() {{
+        if (hoverTimer) {{ clearTimeout(hoverTimer); hoverTimer = null; }}
         if (highlightCircle) {{
             map.removeLayer(highlightCircle);
             highlightCircle = null;
@@ -683,7 +729,9 @@ def build_dashboard_html(
 
     document.querySelectorAll('.news-card[data-event-id]').forEach(function(card) {{
         card.addEventListener('mouseenter', function() {{
-            highlightMarker(this.dataset.eventId);
+            var id = this.dataset.eventId;
+            if (hoverTimer) clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(function() {{ highlightMarker(id); }}, 100);
         }});
         card.addEventListener('mouseleave', function() {{
             clearHighlight();
@@ -701,6 +749,35 @@ def build_dashboard_html(
 
     setTimeout(function() {{ map.invalidateSize(); }}, 100);
 
+    // ── Lazy card rendering (IntersectionObserver) ───────────────
+    var INITIAL_VISIBLE = 20;
+    var cards = document.querySelectorAll('.news-card[data-type]');
+    if (cards.length > INITIAL_VISIBLE) {{
+        // Hide cards beyond the first batch
+        for (var i = INITIAL_VISIBLE; i < cards.length; i++) {{
+            cards[i].classList.add('lazy-hidden');
+        }}
+        // Sentinel element to trigger loading more
+        var sentinel = document.createElement('div');
+        sentinel.id = 'lazySentinel';
+        sentinel.style.height = '1px';
+        var feedContainer = document.querySelector('.news-feed-container');
+        if (feedContainer) {{
+            feedContainer.appendChild(sentinel);
+            var lazyIdx = INITIAL_VISIBLE;
+            var observer = new IntersectionObserver(function(entries) {{
+                if (!entries[0].isIntersecting) return;
+                var end = Math.min(lazyIdx + 15, cards.length);
+                for (var j = lazyIdx; j < end; j++) {{
+                    cards[j].classList.remove('lazy-hidden');
+                }}
+                lazyIdx = end;
+                if (lazyIdx >= cards.length) observer.disconnect();
+            }}, {{ root: feedContainer, rootMargin: '200px' }});
+            observer.observe(sentinel);
+        }}
+    }}
+
     // ── Feed filter logic ────────────────────────────────────────
     var feedActiveTypes = new Set();
     document.querySelectorAll('.feed-filter-btn.active').forEach(function(b) {{
@@ -715,6 +792,7 @@ def build_dashboard_html(
                 card.style.display = 'none';
             }} else {{
                 card.style.display = '';
+                card.classList.remove('lazy-hidden');
                 anyVisible = true;
             }}
         }});

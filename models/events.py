@@ -66,9 +66,14 @@ class NewsEvent(BaseModel):
     raw_text: str = Field(default="", repr=False)
 
     def model_post_init(self, __context) -> None:
-        """Auto-generate a deterministic id from title + source + timestamp."""
+        """Auto-generate a deterministic id from title + source (no timestamp).
+
+        Dropping the timestamp guarantees the exact same headline from the
+        same source always maps to the same ID, regardless of scrape time.
+        """
         if not self.id:
-            blob = f"{self.title}|{self.source_name}|{self.timestamp.isoformat()}"
+            norm_title = self.title.lower().strip()
+            blob = f"{norm_title}|{self.source_name}"
             self.id = hashlib.sha256(blob.encode()).hexdigest()[:16]
 
     @field_validator("severity", mode="before")
