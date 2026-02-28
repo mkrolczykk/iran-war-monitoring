@@ -338,10 +338,19 @@ def build_dashboard_html(
     }}
     .news-card[data-lat] {{
         cursor: pointer;
+        background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-left: 3px solid rgba(255, 255, 255, 0.4);
     }}
     .news-card[data-lat]:hover {{
+        border-left-color: #e74c3c;
         border-color: rgba(231,76,60,0.4);
-        background: rgba(231,76,60,0.06);
+        background: linear-gradient(90deg, rgba(231,76,60,0.12) 0%, rgba(231,76,60,0.03) 100%);
+    }}
+    .news-card[data-lat] .location-tag {{
+        color: #e67e22;
+        font-weight: 600;
+        text-shadow: 0 0 8px rgba(230,126,34,0.4);
     }}
     /* Lazy-loaded cards: hidden initially, revealed by IntersectionObserver */
     .news-card.lazy-hidden {{
@@ -1234,7 +1243,7 @@ def _render_card(event: NewsEvent, now: datetime) -> str:
 
     location_html = ""
     if event.location_name:
-        location_html = f'<div class="location-tag">{event.location_name}</div>'
+        location_html = f'<div class="location-tag">📍 {event.location_name}</div>'
 
     article_url = event.source_url or ""
     source_link = ""
