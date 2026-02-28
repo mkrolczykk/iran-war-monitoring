@@ -285,7 +285,7 @@ def live_dashboard():
         f'{comps["trend_icon"]} {comps["trend_label"]}</span></div>', 
         unsafe_allow_html=True
     )
-    st.altair_chart(comps["trend_chart"], use_container_width=True, theme=None)
+    st.altair_chart(comps["trend_chart"], width="stretch", theme=None)
     
     # 4. Bottom Panels
     st.markdown(f'<div class="analytics" style="margin-top:-24px;">{comps["types_html"]}{comps["locs_html"]}{comps["sources_html"]}</div>', unsafe_allow_html=True)
