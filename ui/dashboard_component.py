@@ -351,7 +351,7 @@ def build_dashboard_html(
     .disclaimer {{
         font-size: 0.62rem;
         color: rgba(255,255,255,0.35);
-        text-align: center;
+        text-align: left;
         padding: 6px 8px;
         border-top: 1px solid rgba(255,255,255,0.06);
         line-height: 1.4;
