@@ -150,7 +150,7 @@ def _run_all_scrapers() -> list[NewsEvent]:
     return all_events
 
 
-def _do_refresh() -> int:
+def _do_refresh() -> None:
     """Fetch fresh data from all sources."""
     events = _run_all_scrapers()
     new_count = st.session_state.event_store.add_many(events)
@@ -160,7 +160,6 @@ def _do_refresh() -> int:
         new_count,
         st.session_state.event_store.count(),
     )
-    return new_count
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -207,9 +206,8 @@ def live_dashboard():
     """Fragment that auto-refreshes the map and news feed."""
 
     elapsed = time.time() - st.session_state.last_refresh
-    new_count = -1
     if elapsed >= REFRESH_INTERVAL_SECONDS:
-        new_count = _do_refresh()
+        _do_refresh()
 
     store: EventStore = st.session_state.event_store
     all_events = store.get_all()
@@ -250,19 +248,16 @@ def live_dashboard():
     summary_text = generate_summary(all_events)
 
     # ── Unified map + feed component ──────────────────────────────
-    # Only rebuild the HTML if we have new events or if it's the first time.
-    # This prevents the embedded iframe from destroying user state/reloading visually on identical data.
-    if new_count > 0 or not st.session_state.get("dashboard_html"):
-        # We pass the default desktop height explicitly so Streamlit doesn't render voids.
-        # For mobile screens, an overriding CSS selector inside ui/styles.py expands it.
-        st.session_state.dashboard_html = build_dashboard_html(
-            all_events=all_events,
-            geo_events=map_events,
-            component_height=720,
-            summary_text=summary_text,
-        )
-        
-    components.html(st.session_state.dashboard_html, height=730, scrolling=False)
+    # We pass the default desktop height explicitly so Streamlit doesn't render voids.
+    # For mobile screens, an overriding CSS selector inside ui/styles.py expands it.
+    dashboard_html = build_dashboard_html(
+        all_events=all_events,
+        geo_events=map_events,
+        component_height=720,
+        summary_text=summary_text,
+    )
+    # Streamlit wrapper iframe 
+    components.html(dashboard_html, height=730, scrolling=False)
 
     # ── Analytics section ──────────────────────────────────────────
     st.markdown(
