@@ -41,7 +41,7 @@ from processing.deduplicator import deduplicate, deduplicate_against_existing
 from processing.summarizer import generate_summary
 from scrapers import ALL_SCRAPERS
 from ui.dashboard_component import build_dashboard_html
-from ui.analytics_component import build_analytics_html
+from ui.analytics_component import get_analytics_components
 from ui.styles import get_custom_css
 from utils.logger import get_logger
 
@@ -267,8 +267,23 @@ def live_dashboard():
         'Analytics &amp; Insights</span></div>',
         unsafe_allow_html=True,
     )
-    analytics_html = build_analytics_html(all_events)
-    st.markdown(analytics_html, unsafe_allow_html=True)
+    comps = get_analytics_components(all_events)
+    
+    # 1. CSS & Metrics
+    st.markdown(comps["css"], unsafe_allow_html=True)
+    st.markdown(f'<div class="analytics">{comps["metrics_html"]}</div>', unsafe_allow_html=True)
+    
+    # 2. Native Streamlit Intensity Trend Chart
+    st.markdown(
+        f'<div class="an-panel-title" style="margin-top:16px; margin-bottom:4px;">Reported Incidents Volume (last 72h, by hour) '
+        f'<span style="float:right;font-size:8px;font-weight:600;color:{comps["trend_color"]};text-transform:uppercase;">'
+        f'{comps["trend_icon"]} {comps["trend_label"]}</span></div>', 
+        unsafe_allow_html=True
+    )
+    st.altair_chart(comps["trend_chart"], use_container_width=True, theme=None)
+    
+    # 4. Bottom Panels
+    st.markdown(f'<div class="analytics" style="margin-top:-24px;">{comps["types_html"]}{comps["locs_html"]}{comps["sources_html"]}</div>', unsafe_allow_html=True)
 
     # ── Error reporting ───────────────────────────────────────────
     if st.session_state.scrape_errors:
