@@ -29,6 +29,7 @@ def get_custom_css() -> str:
     /* Full-width layout – no top padding, header starts at edge */
     .block-container {
         padding: 0 1.5rem 1rem 1.5rem !important;
+        margin-top: 0 !important;
         max-width: 100% !important;
     }
 
@@ -37,7 +38,7 @@ def get_custom_css() -> str:
         background: linear-gradient(135deg, #1a1d23 0%, #0e1117 100%);
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         padding: 0.8rem 1.5rem;
-        margin: -1rem -1.5rem 1rem -1.5rem;
+        margin: 0 -1.5rem 1rem -1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;

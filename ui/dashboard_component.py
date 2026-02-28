@@ -511,6 +511,15 @@ def build_dashboard_html(
         text-align: right;
         font-variant-numeric: tabular-nums;
     }}
+    .timeline-hint {{
+        display: none;
+        font-size: 9px;
+        color: rgba(255,255,255,0.3);
+        font-style: italic;
+        text-align: center;
+        padding: 2px 10px 4px;
+        background: rgba(14,17,23,0.95);
+    }}
     /* ── Summary card ──────────────────────────── */
     .summary-card {{
         background: linear-gradient(135deg, rgba(231,76,60,0.08), rgba(155,89,182,0.06));
@@ -602,6 +611,9 @@ def build_dashboard_html(
         .filter-bar {{
             display: none !important;
         }}
+        .timeline-hint {{
+            display: block;
+        }}
         .map-panel {{
             flex: 1;
         }}
@@ -630,6 +642,7 @@ def build_dashboard_html(
             <input type="range" class="timeline-slider" id="timelineSlider" min="0" max="100" value="100" title="Drag to travel back in time and see when events occurred">
             <span class="timeline-label" id="timelineLabel">Now</span>
         </div>
+        <div class="timeline-hint">Drag the slider or press play to see events appear on the map over time</div>
     </div>
     <div class="feed-panel">
         <div class="feed-header" style="display:flex;align-items:center;justify-content:space-between;">

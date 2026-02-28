@@ -52,10 +52,15 @@ st.markdown(get_custom_css(), unsafe_allow_html=True)
 st.markdown(
     """
     <style>
-    /* Hide Streamlit deploy button and remove top gap completely */
+    /* Hide Streamlit chrome and kill ALL top spacing */
     [data-testid="stToolbar"] { display: none !important; }
-    header[data-testid="stHeader"] { display: none !important; }
-    .block-container { padding-top: 0 !important; }
+    header[data-testid="stHeader"] { display: none !important; height: 0 !important; min-height: 0 !important; }
+    .block-container { padding-top: 0 !important; margin-top: 0 !important; }
+    [data-testid="stAppViewContainer"] { padding-top: 0 !important; }
+    [data-testid="stAppViewBlockContainer"] { padding-top: 0 !important; margin-top: 0 !important; }
+    .appview-container { margin-top: 0 !important; padding-top: 0 !important; }
+    section[data-testid="stMain"] > div { padding-top: 0 !important; }
+    .stApp > header + div { margin-top: 0 !important; }
     .footer-copy {
         font-size: 14px;
         color: rgba(250, 250, 250, 0.6);
@@ -158,7 +163,7 @@ st.markdown(
             <h1 style="margin-bottom:2px;">{APP_TITLE}</h1>
             <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:400;letter-spacing:0.02em;line-height:1.5;">
                 Near real-time news aggregation from {len(SOURCES)} sources:
-                {' · '.join(f'<a href="{s.url}" target="_blank" style="color:rgba(255,255,255,0.55);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);">{s.name}</a>' for s in SOURCES)}
+                {' · '.join(f'<a href="{s.website_url}" target="_blank" style="color:rgba(255,255,255,0.55);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);">{s.name}</a>' for s in SOURCES)}
                 <br/>Map shows last 24h · Data refreshes every ~60s · Hover a card to locate on map · Click filters to narrow view
             </div>
         </div>
@@ -260,7 +265,7 @@ live_dashboard()
 
 st.markdown("---")
 source_links = " · ".join(
-    f"[{s.short_name}]({s.url})" for s in SOURCES
+    f"[{s.short_name}]({s.website_url})" for s in SOURCES
 )
 st.caption(f"Data sources: {source_links}")
 st.caption(
