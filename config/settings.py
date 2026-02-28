@@ -39,6 +39,7 @@ SOURCES: List[SourceConfig] = [
         website_url="https://apnews.com",
         color="#ee3024",
         source_type="rss",
+        enabled=False,
     ),
     SourceConfig(
         name="Reuters",
@@ -47,6 +48,7 @@ SOURCES: List[SourceConfig] = [
         website_url="https://www.reuters.com",
         color="#ff8000",
         source_type="rss",
+        enabled=False,
     ),
     SourceConfig(
         name="Jerusalem Post",
@@ -63,6 +65,7 @@ SOURCES: List[SourceConfig] = [
         website_url="https://news.un.org",
         color="#009edb",
         source_type="rss",
+        enabled=False,
     ),
     SourceConfig(
         name="BBC News",

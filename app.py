@@ -166,8 +166,8 @@ st.markdown(
         <div>
             <h1 style="margin-bottom:2px;">{APP_TITLE}</h1>
             <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:400;letter-spacing:0.02em;line-height:1.5;">
-                Near real-time news aggregation from {len(SOURCES)} sources:
-                {' · '.join(f'<a href="{s.website_url}" target="_blank" style="color:rgba(255,255,255,0.55);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);">{s.name}</a>' for s in SOURCES)}
+                Near real-time news aggregation from {len([s for s in SOURCES if s.enabled])} sources:
+                {' · '.join(f'<a href="{s.website_url}" target="_blank" style="color:rgba(255,255,255,0.55);text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);">{s.name}</a>' for s in SOURCES if s.enabled)}
                 <br/>Map shows last 24h · Data refreshes every ~60s · Hover a card to locate on map · Click filters to narrow view
             </div>
         </div>
@@ -269,7 +269,7 @@ live_dashboard()
 
 st.markdown("---")
 source_links = " · ".join(
-    f"[{s.short_name}]({s.website_url})" for s in SOURCES
+    f"[{s.short_name}]({s.website_url})" for s in SOURCES if s.enabled
 )
 st.caption(f"Data sources: {source_links}")
 st.caption(
